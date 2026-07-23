@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Save, Store, Upload } from "lucide-react";
+import toast from "react-hot-toast";
 import { useAppData } from "../../context/AppDataContext";
 
 export default function Settings() {
@@ -15,8 +16,25 @@ export default function Settings() {
   const handleLogoUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const imageUrl = URL.createObjectURL(file);
-    setForm((prev) => ({ ...prev, logo: imageUrl }));
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file.");
+      return;
+    }
+
+    // Cap at ~1.5MB so localStorage can persist the data URL
+    if (file.size > 1.5 * 1024 * 1024) {
+      toast.error("Logo must be under 1.5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((prev) => ({ ...prev, logo: reader.result }));
+      toast.success("Logo ready — save settings to apply.");
+    };
+    reader.onerror = () => toast.error("Could not read the logo file.");
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Search, UserPlus, X } from "lucide-react";
 import { formatCurrency } from "../../lib/format";
 
@@ -21,7 +21,8 @@ export default function CheckoutModal({
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [walkIn, setWalkIn] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
-  const [paidAmount, setPaidAmount] = useState(total);
+  const [paidAmount, setPaidAmount] = useState("");
+  const [paidTouched, setPaidTouched] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickCustomer, setQuickCustomer] = useState({
     name: "",
@@ -30,6 +31,17 @@ export default function CheckoutModal({
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const resolvedPaid = paidTouched ? paidAmount : total;
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !submitting) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose, submitting]);
 
   const filteredCustomers = useMemo(() => {
     const q = customerQuery.toLowerCase();
@@ -43,11 +55,11 @@ export default function CheckoutModal({
 
   if (!isOpen) return null;
 
-  const remaining = Math.max(0, total - Number(paidAmount || 0));
+  const remaining = Math.max(0, total - Number(resolvedPaid || 0));
   const paymentStatus =
-    Number(paidAmount || 0) <= 0
+    Number(resolvedPaid || 0) <= 0
       ? "UNPAID"
-      : Number(paidAmount || 0) < total
+      : Number(resolvedPaid || 0) < total
         ? "PARTIALLY_PAID"
         : "PAID";
 
@@ -74,7 +86,7 @@ export default function CheckoutModal({
       setError("Cart is empty.");
       return;
     }
-    if (Number(paidAmount) < 0) {
+    if (Number(resolvedPaid) < 0) {
       setError("Paid amount cannot be negative.");
       return;
     }
@@ -91,7 +103,7 @@ export default function CheckoutModal({
       customerId: walkIn ? null : selectedCustomer?.id || null,
       payment: paymentMethod,
       paymentStatus,
-      paidAmount: Number(paidAmount || 0),
+      paidAmount: Number(resolvedPaid || 0),
       discount: Number(discount || 0),
     });
     setSubmitting(false);
@@ -111,6 +123,7 @@ export default function CheckoutModal({
             type="button"
             onClick={onClose}
             className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+            aria-label="Close checkout"
           >
             <X size={20} />
           </button>
@@ -302,8 +315,11 @@ export default function CheckoutModal({
                   <input
                     type="number"
                     min="0"
-                    value={paidAmount}
-                    onChange={(e) => setPaidAmount(e.target.value)}
+                    value={resolvedPaid}
+                    onChange={(e) => {
+                      setPaidTouched(true);
+                      setPaidAmount(e.target.value);
+                    }}
                     className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-yellow-500"
                   />
                   <p className="mt-2 text-xs text-gray-500">

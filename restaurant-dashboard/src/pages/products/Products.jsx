@@ -45,7 +45,7 @@ export default function Products() {
   const handleUpdate = (data) => {
     updateProduct({
       ...data,
-      status: data.status === "Out of Stock" ? data.status : data.status,
+      status: data.status === "Inactive" ? "Inactive" : "Active",
     });
   };
 
@@ -147,6 +147,7 @@ export default function Products() {
                           setEditOpen(true);
                         }}
                         className="rounded-lg bg-blue-500 p-2 text-white hover:bg-blue-600"
+                        aria-label={`Edit ${product.name}`}
                       >
                         <Pencil size={18} />
                       </button>
@@ -154,6 +155,7 @@ export default function Products() {
                         type="button"
                         onClick={() => setDeleteId(product.id)}
                         className="rounded-lg bg-red-500 p-2 text-white hover:bg-red-600"
+                        aria-label={`Delete ${product.name}`}
                       >
                         <Trash2 size={18} />
                       </button>

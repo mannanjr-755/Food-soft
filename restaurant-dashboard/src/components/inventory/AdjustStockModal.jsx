@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function AdjustStockModal({
   isOpen,
@@ -17,7 +18,7 @@ export default function AdjustStockModal({
     const amount = Number(quantity);
 
     if (!amount || amount <= 0) {
-      alert("Please enter a valid quantity");
+      toast.error("Please enter a valid quantity");
       return;
     }
 

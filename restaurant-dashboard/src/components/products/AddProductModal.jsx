@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function AddProductModal({
   isOpen,
@@ -36,7 +37,7 @@ export default function AddProductModal({
       !formData.price ||
       !formData.stock
     ) {
-      alert("Please fill all required fields");
+      toast.error("Please fill all required fields");
       return;
     }
 

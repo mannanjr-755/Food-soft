@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function EditStaffModal({
   isOpen,
@@ -31,7 +32,7 @@ export default function EditStaffModal({
       !formData.email.trim() ||
       !formData.phone.trim()
     ) {
-      alert("Please fill all fields");
+      toast.error("Please fill all fields");
       return;
     }
 

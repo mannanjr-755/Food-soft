@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function AddProductModal({
   isOpen,
@@ -31,7 +32,7 @@ export default function AddProductModal({
     e.preventDefault();
 
     if (!formData.name || !formData.price) {
-      alert("Product name and price are required");
+      toast.error("Product name and price are required");
       return;
     }
 
@@ -40,6 +41,7 @@ export default function AddProductModal({
       name: formData.name,
       category: formData.category,
       price: Number(formData.price),
+      description: formData.description || "",
       status: "Active",
     };
 

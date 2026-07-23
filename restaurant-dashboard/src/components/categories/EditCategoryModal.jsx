@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function EditCategoryModal({
   isOpen,
@@ -24,7 +25,7 @@ export default function EditCategoryModal({
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert("Category name is required");
+      toast.error("Category name is required");
       return;
     }
 

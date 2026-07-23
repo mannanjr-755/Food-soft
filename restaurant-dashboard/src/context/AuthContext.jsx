@@ -8,7 +8,13 @@ import {
 } from "react";
 import toast from "react-hot-toast";
 import { DEMO_USERS } from "../data/seed";
-import { loadJSON, removeKey, saveJSON } from "../lib/storage";
+import {
+  loadJSON,
+  loadSession,
+  removeKey,
+  saveJSON,
+  saveSession,
+} from "../lib/storage";
 
 const AuthContext = createContext(null);
 
@@ -21,14 +27,14 @@ function loadUsers() {
 
 export function AuthProvider({ children }) {
   const [users, setUsers] = useState(loadUsers);
-  const [user, setUser] = useState(() => loadJSON(SESSION_KEY, null));
+  const [user, setUser] = useState(() => loadSession(SESSION_KEY));
 
   const persistUsers = useCallback((next) => {
     setUsers(next);
     saveJSON(USERS_KEY, next);
   }, []);
 
-  const login = useCallback((email, password) => {
+  const login = useCallback((email, password, remember = true) => {
     const normalizedEmail = email.trim().toLowerCase();
     const list = loadUsers();
     const found = list.find(
@@ -66,7 +72,7 @@ export function AuthProvider({ children }) {
       status: found.status,
     };
 
-    saveJSON(SESSION_KEY, session);
+    saveSession(SESSION_KEY, session, remember);
     setUser(session);
     setUsers(list);
 

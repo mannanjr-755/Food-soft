@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function EditProductModal({
   isOpen,
@@ -31,7 +32,7 @@ export default function EditProductModal({
     e.preventDefault();
 
     if (!formData.name || !formData.price) {
-      alert("Product name and price are required");
+      toast.error("Product name and price are required");
       return;
     }
 

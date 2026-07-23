@@ -43,10 +43,10 @@ export function getStockStatus(stock, minStock = 10) {
   return "In Stock";
 }
 
+/** Catalog/POS availability label derived from stock levels. */
 export function getProductAvailability(stock, minStock = 10) {
-  if (stock <= 0) return "Out of Stock";
-  if (stock <= minStock) return "Low Stock";
-  return "Available";
+  const status = getStockStatus(stock, minStock);
+  return status === "In Stock" ? "Available" : status;
 }
 
 export function productSku(product) {

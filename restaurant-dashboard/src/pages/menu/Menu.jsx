@@ -139,6 +139,7 @@ export default function Menu() {
                           setEditOpen(true);
                         }}
                         className="rounded-lg bg-blue-500 p-2 text-white hover:bg-blue-600"
+                        aria-label={`Edit ${product.name}`}
                       >
                         <Pencil size={18} />
                       </button>
@@ -146,6 +147,7 @@ export default function Menu() {
                         type="button"
                         onClick={() => setDeleteId(product.id)}
                         className="rounded-lg bg-red-500 p-2 text-white hover:bg-red-600"
+                        aria-label={`Delete ${product.name}`}
                       >
                         <Trash2 size={18} />
                       </button>

@@ -30,16 +30,12 @@ export default function Login() {
     // Simulate brief auth latency for UX
     await new Promise((r) => setTimeout(r, 400));
 
-    const result = login(email, password);
+    const result = login(email, password, remember);
     setLoading(false);
 
     if (!result.ok) {
       setError(result.message);
       return;
-    }
-
-    if (!remember) {
-      // Session already stored; remember is cosmetic for demo
     }
 
     toast.success(`Welcome back, ${result.user.name}`);

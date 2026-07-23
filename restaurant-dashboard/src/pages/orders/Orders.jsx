@@ -193,6 +193,7 @@ export default function Orders() {
                         }}
                         className="rounded-lg bg-blue-500 p-2 text-white hover:bg-blue-600"
                         title="View"
+                        aria-label={`View order ${order.id}`}
                       >
                         <Eye size={18} />
                       </button>
@@ -201,6 +202,7 @@ export default function Orders() {
                         onClick={() => openInvoice(order)}
                         className="rounded-lg bg-slate-800 p-2 text-white hover:bg-slate-900"
                         title="Print Invoice"
+                        aria-label={`Print invoice ${order.id}`}
                       >
                         <Printer size={18} />
                       </button>

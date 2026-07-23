@@ -152,12 +152,14 @@ export function AppDataProvider({ children }) {
     toast.success("Stock updated");
   }, []);
 
-  const addOrder = useCallback(
-    (orderData) => {
-      const id = nextOrderId(orders);
+  const addOrder = useCallback((orderData) => {
+    let created = null;
+
+    setOrders((prev) => {
+      const id = nextOrderId(prev);
       const numeric = id.replace(/\D/g, "");
       const createdAt = Date.now();
-      const order = {
+      created = {
         phone: "",
         customerId: null,
         discount: 0,
@@ -177,59 +179,59 @@ export function AppDataProvider({ children }) {
             minute: "2-digit",
           })}`,
       };
+      return [created, ...prev];
+    });
 
-      setOrders((prev) => [order, ...prev]);
+    if (!created) return null;
 
-      setProducts((productsPrev) =>
-        productsPrev.map((p) => {
-          const line = order.items?.find((i) => i.productId === p.id);
-          if (!line) return p;
-          return {
-            ...p,
-            stock: Math.max(0, p.stock - line.quantity),
-          };
-        })
-      );
+    setProducts((productsPrev) =>
+      productsPrev.map((p) => {
+        const line = created.items?.find((i) => i.productId === p.id);
+        if (!line) return p;
+        return {
+          ...p,
+          stock: Math.max(0, p.stock - line.quantity),
+        };
+      })
+    );
 
-      if (order.customer && order.customer !== "Walk-in Customer") {
-        setCustomers((customersPrev) => {
-          const existing = customersPrev.find(
-            (c) =>
-              (order.customerId && c.id === order.customerId) ||
-              c.name.toLowerCase() === order.customer.toLowerCase()
+    if (created.customer && created.customer !== "Walk-in Customer") {
+      setCustomers((customersPrev) => {
+        const existing = customersPrev.find(
+          (c) =>
+            (created.customerId && c.id === created.customerId) ||
+            c.name.toLowerCase() === created.customer.toLowerCase()
+        );
+        if (existing) {
+          return customersPrev.map((c) =>
+            c.id === existing.id
+              ? {
+                  ...c,
+                  totalOrders: c.totalOrders + 1,
+                  totalSpent: c.totalSpent + Number(created.total),
+                  lastOrder: "Today",
+                }
+              : c
           );
-          if (existing) {
-            return customersPrev.map((c) =>
-              c.id === existing.id
-                ? {
-                    ...c,
-                    totalOrders: c.totalOrders + 1,
-                    totalSpent: c.totalSpent + Number(order.total),
-                    lastOrder: "Today",
-                  }
-                : c
-            );
-          }
-          return [
-            ...customersPrev,
-            {
-              id: nextId(customersPrev),
-              name: order.customer,
-              phone: order.phone || "",
-              email: order.email || "",
-              totalOrders: 1,
-              totalSpent: Number(order.total),
-              lastOrder: "Today",
-            },
-          ];
-        });
-      }
+        }
+        return [
+          ...customersPrev,
+          {
+            id: nextId(customersPrev),
+            name: created.customer,
+            phone: created.phone || "",
+            email: created.email || "",
+            totalOrders: 1,
+            totalSpent: Number(created.total),
+            lastOrder: "Today",
+          },
+        ];
+      });
+    }
 
-      toast.success(`Order ${id} completed`);
-      return order;
-    },
-    [orders]
-  );
+    toast.success(`Order ${created.id} completed`);
+    return created;
+  }, []);
 
   const updateOrderStatus = useCallback((id, status) => {
     setOrders((prev) =>

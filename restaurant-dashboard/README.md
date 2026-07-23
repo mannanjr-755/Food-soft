@@ -1,16 +1,58 @@
-# React + Vite
+# Restaurant Admin Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Production-ready React admin panel for restaurant operations: POS sales, orders, menu/products, inventory, customers, staff, reports, and settings.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + Vite 8
+- React Router 7
+- Tailwind CSS 4
+- Lucide React icons
+- react-hot-toast
 
-## React Compiler
+Data is stored in the browser (`localStorage`) for demo/offline use. No backend API is required.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Requirements
 
-## Expanding the ESLint configuration
+- Node.js `>= 20.19.0`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Scripts
+
+```bash
+cd restaurant-dashboard
+npm install
+npm run dev      # local development
+npm run build    # production build → dist/
+npm run preview  # preview production build
+npm run lint     # ESLint
+```
+
+## Demo login
+
+| Role    | Email                 | Password    |
+|---------|-----------------------|-------------|
+| Admin   | admin@restaurant.com  | admin123    |
+| Manager | ali@restaurant.com    | manager123  |
+
+Cashier/waiter accounts cannot access the admin panel.
+
+## Deploy (Vercel)
+
+Repository root (`Food-print`) already includes `vercel.json` that builds `restaurant-dashboard` and serves `restaurant-dashboard/dist` with SPA rewrites.
+
+```bash
+vercel --prod
+```
+
+## Project structure
+
+```
+restaurant-dashboard/
+  src/
+    components/   # UI, layout, feature modals
+    context/      # Auth + app data providers
+    data/         # Seed / demo data
+    lib/          # format + storage helpers
+    pages/        # Route screens
+    routes/       # App routing
+```

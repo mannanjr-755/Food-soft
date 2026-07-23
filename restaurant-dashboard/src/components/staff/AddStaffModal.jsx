@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function AddStaffModal({
   isOpen,
@@ -31,7 +32,7 @@ export default function AddStaffModal({
       !formData.phone.trim() ||
       !formData.password.trim()
     ) {
-      alert("Please fill all fields");
+      toast.error("Please fill all fields");
       return;
     }
 

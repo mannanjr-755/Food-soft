@@ -9,20 +9,41 @@ import { useAppData } from "../../context/AppDataContext";
 import { formatCurrency } from "../../lib/format";
 import { EmptyState } from "../../components/ui/States";
 
+function inRange(timestamp, range) {
+  const now = Date.now();
+  const created = Number(timestamp) || 0;
+  if (range === "week") return now - created <= 7 * 24 * 60 * 60 * 1000;
+  if (range === "month") return now - created <= 30 * 24 * 60 * 60 * 1000;
+  if (range === "year") return now - created <= 365 * 24 * 60 * 60 * 1000;
+  return true;
+}
+
 export default function Reports() {
   const { orders, products, settings, stats } = useAppData();
   const [range, setRange] = useState("week");
 
-  const completedOrders = useMemo(
-    () => orders.filter((o) => o.status === "Completed"),
-    [orders]
+  const scopedOrders = useMemo(
+    () =>
+      orders.filter(
+        (o) => o.status === "Completed" && inRange(o.createdAt, range)
+      ),
+    [orders, range]
+  );
+
+  const rangeRevenue = useMemo(
+    () =>
+      scopedOrders.reduce(
+        (sum, o) => sum + Number(o.paidAmount ?? o.total ?? 0),
+        0
+      ),
+    [scopedOrders]
   );
 
   const salesData = useMemo(() => {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const buckets = Object.fromEntries(days.map((d) => [d, 0]));
 
-    completedOrders.forEach((order) => {
+    scopedOrders.forEach((order) => {
       const date = new Date(order.createdAt || 0);
       const key = days[date.getDay()];
       buckets[key] += Number(order.total || 0);
@@ -32,15 +53,19 @@ export default function Reports() {
       day,
       sales: buckets[day] || 0,
     }));
-  }, [completedOrders]);
+  }, [scopedOrders]);
 
   const bestSellers = useMemo(() => {
     const map = new Map();
 
-    completedOrders.forEach((order) => {
+    scopedOrders.forEach((order) => {
       (order.items || []).forEach((item) => {
-        if (typeof item === "string") return;
-        const prev = map.get(item.name) || { name: item.name, sold: 0, revenue: 0 };
+        if (typeof item === "string" || !item?.name) return;
+        const prev = map.get(item.name) || {
+          name: item.name,
+          sold: 0,
+          revenue: 0,
+        };
         prev.sold += item.quantity || 1;
         prev.revenue += (item.price || 0) * (item.quantity || 1);
         map.set(item.name, prev);
@@ -50,17 +75,14 @@ export default function Reports() {
     const list = Array.from(map.values()).sort((a, b) => b.sold - a.sold);
     if (list.length) return list.slice(0, 8);
 
-    // Fallback from products when orders lack item lines
     return products
       .slice(0, 4)
       .map((p) => ({ name: p.name, sold: 0, revenue: 0 }));
-  }, [completedOrders, products]);
+  }, [scopedOrders, products]);
 
   const maxSales = Math.max(...salesData.map((item) => item.sales), 1);
   const avgOrder =
-    completedOrders.length > 0
-      ? stats.revenue / completedOrders.length
-      : 0;
+    scopedOrders.length > 0 ? rangeRevenue / scopedOrders.length : 0;
 
   return (
     <div>
@@ -73,7 +95,7 @@ export default function Reports() {
         </p>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Report range">
         {[
           { id: "week", label: "This Week" },
           { id: "month", label: "This Month" },
@@ -82,6 +104,8 @@ export default function Reports() {
           <button
             key={item.id}
             type="button"
+            role="tab"
+            aria-selected={range === item.id}
             onClick={() => setRange(item.id)}
             className={`rounded-lg px-5 py-3 text-sm font-medium ${
               range === item.id
@@ -98,9 +122,9 @@ export default function Reports() {
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Revenue</p>
+              <p className="text-sm text-gray-500">Period Revenue</p>
               <h2 className="mt-2 text-2xl font-bold">
-                {formatCurrency(stats.revenue, settings.currency)}
+                {formatCurrency(rangeRevenue, settings.currency)}
               </h2>
             </div>
             <div className="rounded-xl bg-green-100 p-3 text-green-600">
@@ -111,8 +135,8 @@ export default function Reports() {
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Orders</p>
-              <h2 className="mt-2 text-2xl font-bold">{stats.totalOrders}</h2>
+              <p className="text-sm text-gray-500">Period Orders</p>
+              <h2 className="mt-2 text-2xl font-bold">{scopedOrders.length}</h2>
             </div>
             <div className="rounded-xl bg-blue-100 p-3 text-blue-600">
               <ShoppingCart size={24} />
@@ -135,7 +159,7 @@ export default function Reports() {
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Products</p>
+              <p className="text-sm text-gray-500">All-time Products</p>
               <h2 className="mt-2 text-2xl font-bold">{stats.products}</h2>
             </div>
             <div className="rounded-xl bg-yellow-100 p-3 text-yellow-600">
@@ -147,9 +171,9 @@ export default function Reports() {
 
       <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Weekly Sales</h2>
+          <h2 className="text-xl font-bold text-gray-800">Sales by weekday</h2>
           <p className="text-sm text-gray-500">
-            Based on completed orders stored in the app
+            Completed orders in the selected period
           </p>
         </div>
 
@@ -167,6 +191,7 @@ export default function Reports() {
                 <div
                   className="w-full rounded-t-lg bg-yellow-500 transition hover:bg-yellow-600"
                   style={{ height: `${Math.max(height, 4)}%` }}
+                  title={`${item.day}: ${formatCurrency(item.sales, settings.currency)}`}
                 />
                 <span className="text-xs text-gray-500 sm:text-sm">
                   {item.day}
@@ -181,7 +206,7 @@ export default function Reports() {
         <div className="border-b border-gray-100 p-6">
           <h2 className="text-xl font-bold">Best Selling Products</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Calculated from completed order line items
+            Calculated from completed order line items in this period
           </p>
         </div>
 
