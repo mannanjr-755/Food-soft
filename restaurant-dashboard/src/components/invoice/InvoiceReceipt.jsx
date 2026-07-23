@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { formatCurrency, formatDateTime } from "../../lib/format";
 
 function Row({ label, value }) {
@@ -11,10 +12,11 @@ function Row({ label, value }) {
 }
 
 export default function InvoiceReceipt({ order, settings }) {
+  const [printNow] = useState(() => formatDateTime(Date.now()));
+
   if (!order) return null;
 
   const { dateLabel, timeLabel } = formatDateTime(order.createdAt);
-  const printNow = formatDateTime(Date.now());
   const currency = settings?.currency || "PKR";
   const paid = Number(order.paidAmount ?? 0);
   const total = Number(order.total ?? 0);
