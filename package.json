@@ -1,0 +1,12 @@
+{
+  "name": "food-soft",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "build": "cd restaurant-dashboard && npm run build",
+    "lint": "cd restaurant-dashboard && npm run lint"
+  }
+}
