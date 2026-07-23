@@ -42,6 +42,7 @@ export default function AddStaffModal({
       email: formData.email,
       phone: formData.phone,
       role: formData.role,
+      password: formData.password,
       status: "Active",
     };
 

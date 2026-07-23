@@ -77,6 +77,7 @@ function CustomerFormModal({ isOpen, onClose, onSave, initial }) {
 export default function Customers() {
   const {
     customers,
+    orders,
     settings,
     addCustomer,
     updateCustomer,
@@ -224,6 +225,8 @@ export default function Customers() {
         isOpen={detailsOpen}
         onClose={() => setDetailsOpen(false)}
         customer={selected}
+        orders={orders}
+        currency={settings.currency}
       />
 
       <CustomerFormModal

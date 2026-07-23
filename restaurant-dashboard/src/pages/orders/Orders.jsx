@@ -6,6 +6,7 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useAppData } from "../../context/AppDataContext";
 import { formatCurrency } from "../../lib/format";
 import InvoiceReceipt from "../../components/invoice/InvoiceReceipt";
@@ -211,8 +212,16 @@ export default function Orders() {
                           <button
                             type="button"
                             onClick={() => {
-                              updateOrderStatus(order.id, "Completed");
-                              updatePaymentStatus(order.id, "PAID", order.total);
+                              updateOrderStatus(order.id, "Completed", {
+                                silent: true,
+                              });
+                              updatePaymentStatus(
+                                order.id,
+                                "PAID",
+                                order.total,
+                                { silent: true }
+                              );
+                              toast.success("Order completed and marked paid");
                             }}
                             className="rounded-lg bg-green-500 p-2 text-white hover:bg-green-600"
                             title="Complete & Mark Paid"
@@ -267,6 +276,7 @@ export default function Orders() {
         isOpen={detailsOpen}
         onClose={() => setDetailsOpen(false)}
         order={selected}
+        currency={settings.currency}
       />
 
       <ConfirmModal

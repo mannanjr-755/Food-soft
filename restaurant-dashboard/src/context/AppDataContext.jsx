@@ -86,9 +86,21 @@ export function AppDataProvider({ children }) {
   }, []);
 
   const updateCategory = useCallback((data) => {
-    setCategories((prev) =>
-      prev.map((c) => (c.id === data.id ? { ...c, ...data } : c))
-    );
+    setCategories((prev) => {
+      const current = prev.find((c) => c.id === data.id);
+      const oldName = current?.name;
+      const nextName = data.name;
+
+      if (oldName && nextName && oldName !== nextName) {
+        setProducts((productsPrev) =>
+          productsPrev.map((p) =>
+            p.category === oldName ? { ...p, category: nextName } : p
+          )
+        );
+      }
+
+      return prev.map((c) => (c.id === data.id ? { ...c, ...data } : c));
+    });
     toast.success("Category updated");
   }, []);
 
@@ -233,47 +245,101 @@ export function AppDataProvider({ children }) {
     return created;
   }, []);
 
-  const updateOrderStatus = useCallback((id, status) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status } : o))
-    );
-    toast.success(`Order marked as ${status}`);
-  }, []);
-
-  const updatePaymentStatus = useCallback((id, paymentStatus, paidAmount) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== id) return o;
-        const paid =
-          paidAmount !== undefined
-            ? Number(paidAmount)
-            : paymentStatus === "PAID"
-              ? Number(o.total)
-              : paymentStatus === "UNPAID"
-                ? 0
-                : Number(o.paidAmount || 0);
-        return { ...o, paymentStatus, paidAmount: paid };
+  const restoreStockFromOrder = useCallback((order) => {
+    if (!order?.items?.length || order.stockRestored) return;
+    setProducts((productsPrev) =>
+      productsPrev.map((p) => {
+        const line = order.items.find((i) => i.productId === p.id);
+        if (!line) return p;
+        return {
+          ...p,
+          stock: Math.max(0, Number(p.stock) + Number(line.quantity || 0)),
+        };
       })
     );
-    toast.success(`Payment marked as ${paymentStatus}`);
   }, []);
 
-  const deleteOrder = useCallback((id) => {
-    setOrders((prev) => prev.filter((o) => o.id !== id));
-    toast.success("Order deleted");
-  }, []);
+  const updateOrderStatus = useCallback(
+    (id, status, options = {}) => {
+      setOrders((prev) => {
+        const target = prev.find((o) => o.id === id);
+        if (
+          target &&
+          status === "Cancelled" &&
+          target.status !== "Cancelled" &&
+          !target.stockRestored
+        ) {
+          restoreStockFromOrder(target);
+        }
+        return prev.map((o) =>
+          o.id === id
+            ? {
+                ...o,
+                status,
+                ...(status === "Cancelled" ? { stockRestored: true } : {}),
+              }
+            : o
+        );
+      });
+      if (!options.silent) {
+        toast.success(`Order marked as ${status}`);
+      }
+    },
+    [restoreStockFromOrder]
+  );
+
+  const updatePaymentStatus = useCallback(
+    (id, paymentStatus, paidAmount, options = {}) => {
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id !== id) return o;
+          const paid =
+            paidAmount !== undefined
+              ? Number(paidAmount)
+              : paymentStatus === "PAID"
+                ? Number(o.total)
+                : paymentStatus === "UNPAID"
+                  ? 0
+                  : Number(o.paidAmount || 0);
+          return { ...o, paymentStatus, paidAmount: paid };
+        })
+      );
+      if (!options.silent) {
+        toast.success(`Payment marked as ${paymentStatus}`);
+      }
+    },
+    []
+  );
+
+  const deleteOrder = useCallback(
+    (id) => {
+      setOrders((prev) => {
+        const target = prev.find((o) => o.id === id);
+        if (
+          target &&
+          target.status !== "Cancelled" &&
+          !target.stockRestored
+        ) {
+          restoreStockFromOrder(target);
+        }
+        return prev.filter((o) => o.id !== id);
+      });
+      toast.success("Order deleted");
+    },
+    [restoreStockFromOrder]
+  );
 
   const addCustomer = useCallback((data) => {
-    let created = null;
+    const created = {
+      totalOrders: 0,
+      totalSpent: 0,
+      lastOrder: "Never",
+      ...data,
+    };
     setCustomers((prev) => {
-      created = {
-        totalOrders: 0,
-        totalSpent: 0,
-        lastOrder: "Never",
-        ...data,
-        id: nextId(prev),
-      };
-      return [...prev, created];
+      const withId = { ...created, id: nextId(prev) };
+      Object.assign(created, withId);
+      return [...prev, withId];
     });
     toast.success("Customer added");
     return created;
