@@ -19,16 +19,13 @@ import {
 } from "../../lib/format";
 import InvoiceReceipt from "../../components/invoice/InvoiceReceipt";
 import { EmptyState } from "../../components/ui/States";
-import CheckoutModal from "./CheckoutModal";
 
 export default function POS() {
   const {
     products,
     categories,
-    customers,
     settings,
     addOrder,
-    addCustomer,
   } = useAppData();
   const { user } = useAuth();
 
@@ -37,7 +34,6 @@ export default function POS() {
   const [availabilityFilter, setAvailabilityFilter] = useState("All");
   const [cart, setCart] = useState([]);
   const [discount, setDiscount] = useState(0);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
 
@@ -144,16 +140,20 @@ export default function POS() {
     setCart([]);
     setDiscount(0);
     setCompletedOrder(null);
-    setCheckoutOpen(false);
     setCartOpen(false);
   };
 
-  const handleConfirmCheckout = (checkoutData) => {
+  const handleCheckout = () => {
+    if (!cart.length) {
+      toast.error("Cart is empty.");
+      return;
+    }
+
     try {
       const order = addOrder({
-        customer: checkoutData.customer,
-        phone: checkoutData.phone,
-        customerId: checkoutData.customerId,
+        customer: "Walk-in Customer",
+        phone: "",
+        customerId: null,
         items: cart.map((item) => ({
           productId: item.id,
           name: item.name,
@@ -166,19 +166,16 @@ export default function POS() {
           .join(", "),
         subtotal,
         tax,
-        discount: Number(checkoutData.discount || 0),
-        total: Math.max(
-          0,
-          subtotal + tax - Number(checkoutData.discount || 0)
-        ),
-        payment: checkoutData.payment,
-        paymentStatus: checkoutData.paymentStatus,
-        paidAmount: checkoutData.paidAmount,
+        discount: Number(discount || 0),
+        total: Math.max(0, subtotal + tax - Number(discount || 0)),
+        payment: "Cash",
+        paymentStatus: "PAID",
+        paidAmount: Math.max(0, subtotal + tax - Number(discount || 0)),
         status: "Completed",
         waiter: user?.name || "Counter",
         staffName: user?.name || "Counter",
-        tableNumber: checkoutData.tableNumber || "—",
-        persons: checkoutData.persons || "—",
+        tableNumber: "—",
+        persons: "—",
       });
 
       if (!order?.id) {
@@ -188,7 +185,6 @@ export default function POS() {
 
       setCart([]);
       setDiscount(0);
-      setCheckoutOpen(false);
       setCartOpen(false);
       setCompletedOrder(order);
     } catch {
@@ -318,7 +314,7 @@ export default function POS() {
       <button
         type="button"
         disabled={cart.length === 0}
-        onClick={() => setCheckoutOpen(true)}
+        onClick={handleCheckout}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-500 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-yellow-600 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <ShoppingCart size={20} />
@@ -530,21 +526,6 @@ export default function POS() {
         </div>
       ) : null}
 
-      <CheckoutModal
-        key={checkoutOpen ? `checkout-${cart.length}-${total}` : "checkout-closed"}
-        isOpen={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        onConfirm={handleConfirmCheckout}
-        cart={cart}
-        customers={customers}
-        settings={settings}
-        subtotal={subtotal}
-        tax={tax}
-        discount={Number(discount || 0)}
-        total={total}
-        onDiscountChange={setDiscount}
-        onAddCustomer={(data) => addCustomer(data)}
-      />
     </div>
   );
 }
