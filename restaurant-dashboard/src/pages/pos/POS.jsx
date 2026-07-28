@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Minus,
   Plus,
@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAppData } from "../../context/AppDataContext";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -39,6 +40,24 @@ export default function POS() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
+
+  useEffect(() => {
+    if (!completedOrder?.id) return;
+
+    const printKey = `printed-receipt:${completedOrder.id}`;
+    if (window.sessionStorage.getItem(printKey) === "done") return;
+
+    const timeoutId = window.setTimeout(() => {
+      try {
+        window.print();
+        window.sessionStorage.setItem(printKey, "done");
+      } catch {
+        toast.error("Unable to open print dialog. Please print manually.");
+      }
+    }, 450);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [completedOrder]);
 
   const categoryTabs = useMemo(
     () => [
@@ -130,46 +149,51 @@ export default function POS() {
   };
 
   const handleConfirmCheckout = (checkoutData) => {
-    const order = addOrder({
-      customer: checkoutData.customer,
-      phone: checkoutData.phone,
-      customerId: checkoutData.customerId,
-      items: cart.map((item) => ({
-        productId: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        discount: item.lineDiscount || 0,
-      })),
-      itemsLabel: cart
-        .map((item) => `${item.name} x${item.quantity}`)
-        .join(", "),
-      subtotal,
-      tax,
-      discount: Number(checkoutData.discount || 0),
-      total: Math.max(
-        0,
-        subtotal + tax - Number(checkoutData.discount || 0)
-      ),
-      payment: checkoutData.payment,
-      paymentStatus: checkoutData.paymentStatus,
-      paidAmount: checkoutData.paidAmount,
-      status: "Completed",
-      waiter: user?.name || "Counter",
-      staffName: user?.name || "Counter",
-      tableNumber: checkoutData.tableNumber || "—",
-      persons: checkoutData.persons || "—",
-    });
+    try {
+      const order = addOrder({
+        customer: checkoutData.customer,
+        phone: checkoutData.phone,
+        customerId: checkoutData.customerId,
+        items: cart.map((item) => ({
+          productId: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          discount: item.lineDiscount || 0,
+        })),
+        itemsLabel: cart
+          .map((item) => `${item.name} x${item.quantity}`)
+          .join(", "),
+        subtotal,
+        tax,
+        discount: Number(checkoutData.discount || 0),
+        total: Math.max(
+          0,
+          subtotal + tax - Number(checkoutData.discount || 0)
+        ),
+        payment: checkoutData.payment,
+        paymentStatus: checkoutData.paymentStatus,
+        paidAmount: checkoutData.paidAmount,
+        status: "Completed",
+        waiter: user?.name || "Counter",
+        staffName: user?.name || "Counter",
+        tableNumber: checkoutData.tableNumber || "—",
+        persons: checkoutData.persons || "—",
+      });
 
-    setCart([]);
-    setDiscount(0);
-    setCheckoutOpen(false);
-    setCartOpen(false);
-    setCompletedOrder(order);
+      if (!order?.id) {
+        toast.error("Sale could not be completed. Please try again.");
+        return;
+      }
 
-    window.setTimeout(() => {
-      window.print();
-    }, 450);
+      setCart([]);
+      setDiscount(0);
+      setCheckoutOpen(false);
+      setCartOpen(false);
+      setCompletedOrder(order);
+    } catch {
+      toast.error("An unexpected error occurred while completing the sale.");
+    }
   };
 
   const CartPanel = (
